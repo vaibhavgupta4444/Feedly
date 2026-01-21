@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Layout, theme, Button, Typography, Row, Col, Card, Space } from 'antd';
 import {
   RocketOutlined,
@@ -8,7 +8,8 @@ import {
   ThunderboltOutlined,
   GlobalOutlined,
 } from '@ant-design/icons';
-import { Link } from 'react-router';
+import { Link, Navigate } from 'react-router';
+import UserContext from './contexts/userContext';
 
 const { Header, Content, Footer } = Layout;
 const { Title, Paragraph, Text } = Typography;
@@ -17,6 +18,12 @@ const App: React.FC = () => {
   const {
     token: { colorBgContainer },
   } = theme.useToken();
+
+  const userData = useContext(UserContext);
+
+  if (userData?.user) {
+    return <Navigate to="/feed" replace />;
+  }
 
   const features = [
     {
@@ -72,15 +79,15 @@ const App: React.FC = () => {
           Feedly
         </Title>
         <Space size="middle">
-          <Link to="/signin">
-            <Button type="text" size="large" style={{ fontWeight: 500 }}>
-              Sign In
-            </Button>
-          </Link>
-          <Link to="/signup">
+          {userData?.user ? (
             <Button 
               type="primary" 
               size="large"
+              onClick={() => {
+                localStorage.removeItem('access_token');
+                userData.setUser(null);
+                window.location.href = '/';
+              }}
               style={{
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 border: 'none',
@@ -88,9 +95,31 @@ const App: React.FC = () => {
                 borderRadius: '8px',
               }}
             >
-              Get Started
+              Logout
             </Button>
-          </Link>
+          ) : (
+            <>
+              <Link to="/signin">
+                <Button type="text" size="large" style={{ fontWeight: 500 }}>
+                  Sign In
+                </Button>
+              </Link>
+              <Link to="/signup">
+                <Button 
+                  type="primary" 
+                  size="large"
+                  style={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    border: 'none',
+                    fontWeight: 500,
+                    borderRadius: '8px',
+                  }}
+                >
+                  Get Started
+                </Button>
+              </Link>
+            </>
+          )}
         </Space>
       </Header>
 

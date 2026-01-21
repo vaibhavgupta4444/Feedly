@@ -1,49 +1,70 @@
-import { Form, Input, Button, Card, Typography, Checkbox, notification} from 'antd';
-import { UserOutlined, LockOutlined, ArrowLeftOutlined } from '@ant-design/icons';
-import { Link, useNavigate } from 'react-router';
-import type { SignInFormValues } from '../type';
-import { useState } from 'react';
+import { Form, Input, Button, Card, Typography, notification } from 'antd';
+import { LockOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { Link, useNavigate, useSearchParams } from 'react-router';
+import { useState, useEffect } from 'react';
 import api from '../lib/api';
 
 const { Title, Text } = Typography;
 
-const SignIn = () => {
-  const [form] = Form.useForm<SignInFormValues>();
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
+interface ResetPasswordFormValues {
+  password: string;
+  confirmPassword: string;
+}
 
-  const onFinish = async (values: SignInFormValues) => {
+const ResetPassword = () => {
+  const [form] = Form.useForm<ResetPasswordFormValues>();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [loading, setLoading] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const resetToken = searchParams.get('token');
+    if (!resetToken) {
+      notification.error({
+        message: 'Invalid Link',
+        description: 'This password reset link is invalid or has expired.',
+        placement: 'topRight',
+      });
+      navigate('/signin');
+    } else {
+      setToken(resetToken);
+    }
+  }, [searchParams, navigate]);
+
+  const onFinish = async (values: ResetPasswordFormValues) => {
+    if (values.password !== values.confirmPassword) {
+      notification.error({
+        message: 'Password Mismatch',
+        description: 'Passwords do not match. Please try again.',
+        placement: 'topRight',
+      });
+      return;
+    }
+
     try {
       setLoading(true);
-      // Convert to URLSearchParams for form-data format
-      const formData = new URLSearchParams();
-      formData.append('username', values.username);
-      formData.append('password', values.password);
-      
-      const response = await api.post('/users/login', formData, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
+      await api.post('users/reset-password', {
+        token: token,
+        new_password: values.password,
       });
       
-      if (response.data?.access_token) {
-        localStorage.setItem('access_token', response.data.access_token);
-        if (response.data?.refresh_token) {
-          localStorage.setItem('refresh_token', response.data.refresh_token);
-        }
-        notification.success({
-          message: 'Signed in successfully',
-          description: 'Welcome back! You are now signed in.',
-          placement: 'topRight',
-        });
-        navigate('/feed');
-      }
+      notification.success({
+        message: 'Password Reset Successful',
+        description: 'Your password has been reset. Please sign in with your new password.',
+        placement: 'topRight',
+      });
+      navigate('/signin');
     } catch (err) {
-      // Error notification is handled globally by api interceptor
+      // Error toast handled globally by api interceptor
     } finally {
       setLoading(false);
     }
   };
+
+  if (!token) {
+    return null;
+  }
 
   return (
     <div style={{ 
@@ -54,16 +75,17 @@ const SignIn = () => {
       padding: '20px',
       position: 'relative'
     }}>
-      <Link to="/" style={{ position: 'absolute', top: 20, left: 20 }}>
+      <Link to="/signin" style={{ position: 'absolute', top: 20, left: 20 }}>
         <Button 
           type="text" 
           icon={<ArrowLeftOutlined />}
           style={{ color: '#667eea', fontWeight: 500, fontSize: '16px' }}
           size="large"
         >
-          Back to Home
+          Back to Sign In
         </Button>
       </Link>
+      
       <Card 
         style={{ 
           width: '100%',
@@ -76,29 +98,30 @@ const SignIn = () => {
       >
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <Title level={2} style={{ marginBottom: 8, color: '#1a1a1a' }}>
-            Welcome Back!
+            Reset Password
           </Title>
           <Text type="secondary" style={{ fontSize: '15px' }}>
-            Sign in to continue to your account
+            Enter your new password below
           </Text>
         </div>
         
         <Form
           form={form}
-          name="signin"
+          name="reset-password"
           onFinish={onFinish}
           layout="vertical"
           size="large"
         >
           <Form.Item
-            name="username"
+            name="password"
             rules={[
-              { required: true, message: 'Please input your username!' }
+              { required: true, message: 'Please input your new password!' },
+              { min: 6, message: 'Password must be at least 6 characters!' }
             ]}
           >
-            <Input 
-              prefix={<UserOutlined style={{ color: '#bfbfbf' }} />} 
-              placeholder="username" 
+            <Input.Password 
+              prefix={<LockOutlined style={{ color: '#bfbfbf' }} />} 
+              placeholder="New Password" 
               style={{ 
                 height: '48px',
                 borderRadius: '8px',
@@ -108,30 +131,21 @@ const SignIn = () => {
           </Form.Item>
 
           <Form.Item
-            name="password"
+            name="confirmPassword"
             rules={[
-              { required: true, message: 'Please input your password!' },
+              { required: true, message: 'Please confirm your password!' },
               { min: 6, message: 'Password must be at least 6 characters!' }
             ]}
           >
             <Input.Password 
               prefix={<LockOutlined style={{ color: '#bfbfbf' }} />} 
-              placeholder="Password" 
+              placeholder="Confirm New Password" 
               style={{ 
                 height: '48px',
                 borderRadius: '8px',
                 fontSize: '15px'
               }}
             />
-          </Form.Item>
-
-          <Form.Item style={{ marginBottom: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Checkbox>Remember me</Checkbox>
-              <Link to="/forgot-password" style={{ color: '#667eea', fontWeight: 500 }}>
-                Forgot password?
-              </Link>
-            </div>
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 16 }}>
@@ -150,15 +164,15 @@ const SignIn = () => {
               }}
               loading={loading}
             >
-              Sign In
+              Reset Password
             </Button>
           </Form.Item>
 
           <div style={{ textAlign: 'center', marginTop: 20 }}>
             <Text type="secondary">
-              Don't have an account?{' '}
-              <Link to="/signup" style={{ color: '#667eea', fontWeight: 600 }}>
-                Sign Up
+              Remember your password?{' '}
+              <Link to="/signin" style={{ color: '#667eea', fontWeight: 600 }}>
+                Sign In
               </Link>
             </Text>
           </div>
@@ -168,4 +182,4 @@ const SignIn = () => {
   );
 };
 
-export default SignIn;
+export default ResetPassword;
