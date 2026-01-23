@@ -59,6 +59,8 @@ export interface Notification {
   comment_id?: number;
   is_read: boolean;
   created_at: string;
+  message?: string; // Optional: human-readable message from backend
+  actor_username?: string; // Optional: username from backend
   actor?: User;
   post?: Post;
   comment?: Comment;

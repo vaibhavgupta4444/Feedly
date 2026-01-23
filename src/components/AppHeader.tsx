@@ -3,6 +3,9 @@ import { BellOutlined, UserOutlined, LogoutOutlined, HomeOutlined } from '@ant-d
 import { Link, useNavigate } from 'react-router';
 import { useState, useEffect } from 'react';
 import api from '../lib/api';
+import { socketService } from '../lib/socket';
+import type { Notification } from '../type';
+import NotificationStatusIndicator from './NotificationStatusIndicator';
 
 const { Header } = Layout;
 
@@ -14,14 +17,36 @@ const AppHeader: React.FC = () => {
   useEffect(() => {
     if (isAuthed) {
       loadUnreadCount();
+
+      // Listen for real-time notification updates
+      const handleNewNotification = (notification: Notification) => {
+        if (!notification.is_read) {
+          setUnreadCount((prev) => prev + 1);
+        }
+      };
+
+      socketService.on('notification', handleNewNotification);
+
+      return () => {
+        socketService.off('notification', handleNewNotification);
+      };
     }
   }, [isAuthed]);
 
   const loadUnreadCount = async () => {
     try {
       const res = await api.get('/notifications/');
-      const data = Array.isArray(res.data) ? res.data : res.data?.items || [];
-      setUnreadCount(data.filter((n: any) => !n.is_read).length);
+      
+      // Use unread_count from backend if available
+      if (res.data?.unread_count !== undefined) {
+        setUnreadCount(res.data.unread_count);
+      } else {
+        // Fallback: count manually
+        const data = Array.isArray(res.data) 
+          ? res.data 
+          : (res.data?.notifications || res.data?.items || []);
+        setUnreadCount(data.filter((n: any) => !n.is_read).length);
+      }
     } catch (err) {
       // Ignore errors
     }
@@ -66,6 +91,7 @@ const AppHeader: React.FC = () => {
       <Space size="middle">
         {isAuthed ? (
           <>
+            <NotificationStatusIndicator />
             <Link to="/feed">
               <Button type="text" icon={<HomeOutlined />} size="large">
                 Feed

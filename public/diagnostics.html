@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Push Notification Diagnostics</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .section {
+      background: white;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+    .status.success { background: #d4edda; color: #155724; }
+    .status.error { background: #f8d7da; color: #721c24; }
+    .status.warning { background: #fff3cd; color: #856404; }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin: 5px;
+    }
+    button:hover { background: #45a049; }
+    button.secondary { background: #2196F3; }
+    button.secondary:hover { background: #0b7dda; }
+    pre {
+      background: #f4f4f4;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    .log { margin-top: 20px; }
+    .log-entry {
+      padding: 8px;
+      margin: 4px 0;
+      border-left: 3px solid #ccc;
+      background: #fafafa;
+    }
+    .log-entry.success { border-color: #4CAF50; }
+    .log-entry.error { border-color: #f44336; }
+    h1 { color: #333; }
+    h2 { color: #666; margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h1>🔔 Push Notification Diagnostics</h1>
+  
+  <div class="section">
+    <h2>1. Browser Support</h2>
+    <div id="support-status">Checking...</div>
+  </div>
+
+  <div class="section">
+    <h2>2. Service Worker</h2>
+    <div id="sw-status">Checking...</div>
+    <button onclick="checkServiceWorker()">Recheck Service Worker</button>
+  </div>
+
+  <div class="section">
+    <h2>3. Notification Permission</h2>
+    <div id="permission-status">Checking...</div>
+    <button onclick="requestPermission()">Request Permission</button>
+  </div>
+
+  <div class="section">
+    <h2>4. Push Subscription</h2>
+    <div id="subscription-status">Checking...</div>
+    <button onclick="checkSubscription()">Check Subscription</button>
+    <button class="secondary" onclick="testNotification()">Send Test Notification</button>
+  </div>
+
+  <div class="section">
+    <h2>5. Backend Connection</h2>
+    <div id="backend-status">Checking...</div>
+    <button onclick="checkBackend()">Check Backend</button>
+  </div>
+
+  <div class="section log">
+    <h2>Console Log</h2>
+    <div id="log-output"></div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:8000';
+    
+    function log(message, type = 'info') {
+      const logDiv = document.getElementById('log-output');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logDiv.insertBefore(entry, logDiv.firstChild);
+      console.log(message);
+    }
+
+    function setStatus(id, html) {
+      document.getElementById(id).innerHTML = html;
+    }
+
+    async function checkBrowserSupport() {
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        setStatus('support-status', '✅ Push notifications are supported <span class="status success">SUPPORTED</span>');
+        log('Browser supports push notifications', 'success');
+        return true;
+      } else {
+        setStatus('support-status', '❌ Push notifications are NOT supported <span class="status error">NOT SUPPORTED</span>');
+        log('Browser does NOT support push notifications', 'error');
+        return false;
+      }
+    }
+
+    async function checkServiceWorker() {
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        
+        if (!registration) {
+          setStatus('sw-status', '❌ No service worker registered <span class="status error">NOT REGISTERED</span>');
+          log('No service worker found', 'error');
+          return null;
+        }
+
+        if (registration.active) {
+          setStatus('sw-status', `✅ Service worker active <span class="status success">ACTIVE</span><br><small>Scope: ${registration.scope}</small>`);
+          log('Service worker is active and running', 'success');
+          return registration;
+        } else {
+          setStatus('sw-status', '⚠️ Service worker registered but not active <span class="status warning">INACTIVE</span>');
+          log('Service worker registered but not active', 'warning');
+          return registration;
+        }
+      } catch (error) {
+        setStatus('sw-status', `❌ Error checking service worker <span class="status error">ERROR</span><br><small>${error.message}</small>`);
+        log(`Error checking service worker: ${error.message}`, 'error');
+        return null;
+      }
+    }
+
+    async function requestPermission() {
+      try {
+        const permission = await Notification.requestPermission();
+        checkPermissionStatus();
+        log(`Permission ${permission}`, permission === 'granted' ? 'success' : 'error');
+      } catch (error) {
+        log(`Error requesting permission: ${error.message}`, 'error');
+      }
+    }
+
+    async function checkPermissionStatus() {
+      const permission = Notification.permission;
+      
+      if (permission === 'granted') {
+        setStatus('permission-status', '✅ Notification permission granted <span class="status success">GRANTED</span>');
+        log('Notification permission is granted', 'success');
+      } else if (permission === 'denied') {
+        setStatus('permission-status', '❌ Notification permission denied <span class="status error">DENIED</span><br><small>Reset in browser settings</small>');
+        log('Notification permission is denied', 'error');
+      } else {
+        setStatus('permission-status', '⚠️ Notification permission not requested <span class="status warning">DEFAULT</span>');
+        log('Notification permission not yet requested', 'warning');
+      }
+    }
+
+    async function checkSubscription() {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        
+        if (subscription) {
+          const endpoint = subscription.endpoint;
+          setStatus('subscription-status', `✅ Push subscription active <span class="status success">SUBSCRIBED</span><br><small>Endpoint: ${endpoint.substring(0, 50)}...</small>`);
+          log('Active push subscription found', 'success');
+          log(`Endpoint: ${endpoint}`);
+        } else {
+          setStatus('subscription-status', '❌ No push subscription found <span class="status error">NOT SUBSCRIBED</span><br><small>Enable push notifications in the app</small>');
+          log('No active push subscription', 'warning');
+        }
+      } catch (error) {
+        setStatus('subscription-status', `❌ Error checking subscription <span class="status error">ERROR</span><br><small>${error.message}</small>`);
+        log(`Error checking subscription: ${error.message}`, 'error');
+      }
+    }
+
+    async function testNotification() {
+      if (Notification.permission !== 'granted') {
+        alert('Please grant notification permission first');
+        return;
+      }
+
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        await registration.showNotification('Test Notification', {
+          body: 'This is a test notification from the diagnostic tool',
+          icon: '/vite.svg',
+          badge: '/vite.svg',
+        });
+        log('Test notification sent successfully', 'success');
+      } catch (error) {
+        log(`Error sending test notification: ${error.message}`, 'error');
+      }
+    }
+
+    async function checkBackend() {
+      try {
+        log('Checking backend connection...');
+        const response = await fetch(`${API_URL}/vapid/public-key`);
+        
+        if (!response.ok) {
+          setStatus('backend-status', `❌ Backend returned error: ${response.status} <span class="status error">ERROR</span>`);
+          log(`Backend error: ${response.status} ${response.statusText}`, 'error');
+          return;
+        }
+
+        const data = await response.json();
+        
+        if (data.public_key) {
+          setStatus('backend-status', `✅ Backend connected <span class="status success">CONNECTED</span><br><small>VAPID key configured (${data.public_key.length} chars)</small>`);
+          log('Backend is reachable and VAPID key is configured', 'success');
+        } else {
+          setStatus('backend-status', '⚠️ Backend connected but no VAPID key <span class="status warning">NO KEY</span>');
+          log('Backend reachable but VAPID key missing', 'warning');
+        }
+      } catch (error) {
+        setStatus('backend-status', `❌ Cannot connect to backend <span class="status error">OFFLINE</span><br><small>${error.message}</small>`);
+        log(`Backend connection failed: ${error.message}`, 'error');
+      }
+    }
+
+    // Run all checks on load
+    async function runAllChecks() {
+      log('Starting diagnostics...', 'info');
+      await checkBrowserSupport();
+      await checkServiceWorker();
+      await checkPermissionStatus();
+      await checkSubscription();
+      await checkBackend();
+      log('Diagnostics complete', 'success');
+    }
+
+    runAllChecks();
+  </script>
+</body>
+</html>

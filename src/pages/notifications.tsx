@@ -1,9 +1,11 @@
-import { Layout, Typography, List, Card, Avatar, Button, Space, Badge } from 'antd';
+import { Layout, Typography, List, Card, Avatar, Button, Space, Badge, message } from 'antd';
 import { UserOutlined, HeartOutlined, CommentOutlined, UserAddOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import api from '../lib/api';
 import type { Notification } from '../type';
+import { socketService } from '../lib/socket';
+import NotificationToggle from '../components/NotificationToggle';
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
@@ -15,15 +17,37 @@ const Notifications: React.FC = () => {
 
   useEffect(() => {
     load();
+
+    // Listen for real-time notifications (only 'notification' event)
+    const handleNewNotification = (notification: Notification) => {
+      setNotifications((prev) => [notification, ...prev]);
+      if (!notification.is_read) {
+        setUnreadCount((prev) => prev + 1);
+      }
+      message.info(`New notification: ${getMessage(notification)}`);
+    };
+
+    socketService.on('notification', handleNewNotification);
+
+    return () => {
+      socketService.off('notification', handleNewNotification);
+    };
   }, []);
 
   const load = async () => {
     try {
       setLoading(true);
       const res = await api.get('/notifications/');
-      const data = Array.isArray(res.data) ? res.data : res.data?.items || [];
+      // Handle different response formats
+      const data = Array.isArray(res.data) 
+        ? res.data 
+        : (res.data?.notifications || res.data?.items || []);
+      
       setNotifications(data);
-      setUnreadCount(data.filter((n: Notification) => !n.is_read).length);
+      
+      // Use unread_count from backend if available, otherwise count manually
+      const unread = res.data?.unread_count ?? data.filter((n: Notification) => !n.is_read).length;
+      setUnreadCount(unread);
     } finally {
       setLoading(false);
     }
@@ -75,7 +99,13 @@ const Notifications: React.FC = () => {
   };
 
   const getMessage = (notif: Notification) => {
-    const actor = notif.actor?.username || 'Someone';
+    // Use backend message if available
+    if (notif.message) {
+      return notif.message;
+    }
+    
+    // Fallback to client-side message generation
+    const actor = notif.actor_username || notif.actor?.username || 'Someone';
     switch (notif.type) {
       case 'follow':
         return `${actor} started following you`;
@@ -110,6 +140,16 @@ const Notifications: React.FC = () => {
             )}
           </div>
         </Card>
+
+        {/* Push Notification Settings */}
+        <div style={{ marginBottom: 16 }}>
+          <NotificationToggle 
+            token={localStorage.getItem('access_token') || ''} 
+            onSubscriptionChange={(isSubscribed) => {
+              message.success(isSubscribed ? 'Push notifications enabled!' : 'Push notifications disabled');
+            }}
+          />
+        </div>
 
         <List
           loading={loading}
