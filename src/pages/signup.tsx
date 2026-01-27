@@ -1,7 +1,7 @@
 import { Form, Input, Button, Card, Typography, notification } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import api from '../lib/api';
 
 const { Title, Text } = Typography;
@@ -16,7 +16,7 @@ interface VerifyFormValues {
   otp: string;
 }
 
-const SignUp = () => {
+const SignUp:React.FC = () => {
   const [form] = Form.useForm<SignUpFormValues>();
   const [verifyForm] = Form.useForm<VerifyFormValues>();
   const navigate = useNavigate();

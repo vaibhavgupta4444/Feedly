@@ -1,7 +1,7 @@
 import { Form, Input, Button, Card, Typography, notification } from 'antd';
 import { MailOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { Link } from 'react-router';
-import { useState } from 'react';
+import React,{ useState } from 'react';
 import api from '../lib/api';
 
 const { Title, Text } = Typography;
@@ -10,7 +10,7 @@ interface ForgotPasswordFormValues {
   email: string;
 }
 
-const ForgotPassword = () => {
+const ForgotPassword:React.FC = () => {
   const [form] = Form.useForm<ForgotPasswordFormValues>();
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);

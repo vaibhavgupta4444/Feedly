@@ -25,7 +25,7 @@ export function useAutoSubscribePushNotifications() {
               setIsSubscribed(true);
               console.log('✅ Auto-subscribed to push notifications');
             })
-            .catch((error: any) => {
+            .catch((error: unknown) => {
               console.error('Failed to auto-subscribe to push notifications:', error);
             });
         }

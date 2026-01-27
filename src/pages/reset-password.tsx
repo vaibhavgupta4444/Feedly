@@ -1,7 +1,7 @@
 import { Form, Input, Button, Card, Typography, notification } from 'antd';
 import { LockOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../lib/api';
 
 const { Title, Text } = Typography;
@@ -11,7 +11,7 @@ interface ResetPasswordFormValues {
   confirmPassword: string;
 }
 
-const ResetPassword = () => {
+const ResetPassword:React.FC = () => {
   const [form] = Form.useForm<ResetPasswordFormValues>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

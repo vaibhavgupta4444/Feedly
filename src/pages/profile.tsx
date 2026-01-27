@@ -4,8 +4,8 @@ import { useEffect, useState, useContext } from 'react';
 import { useParams, Link } from 'react-router';
 import api from '../lib/api';
 import type { Post } from '../type';
-import PostItem from '../components/PostItem';
 import UserContext from '../contexts/userContext';
+import PostItem from '../components/PostItem';
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
@@ -71,18 +71,18 @@ const Profile: React.FC = () => {
         <Tabs
           defaultActiveKey="posts"
           items={[
-            // {
-            //   key: 'posts',
-            //   label: 'Posts',
-            //   children: (
-            //     <List
-            //       loading={loading}
-            //       dataSource={posts}
-            //       renderItem={(post) => <PostItem key={post.id} post={post} />}
-            //       locale={{ emptyText: 'No posts yet' }}
-            //     />
-            //   ),
-            // },
+            {
+              key: 'posts',
+              label: 'Posts',
+              children: (
+                <List
+                  loading={loading}
+                  dataSource={posts}
+                  renderItem={(post) => <PostItem key={post.id} post={post} />}
+                  locale={{ emptyText: 'No posts yet' }}
+                />
+              ),
+            },
             {
               key: 'followers',
               label: `Followers (${userData?.user?.followers?.length || 0})`,

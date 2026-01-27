@@ -2,16 +2,11 @@ import { Card, Avatar, Button, List, Typography, Input, Form, Space } from 'antd
 import { CommentOutlined, UserOutlined, HeartOutlined, HeartFilled } from '@ant-design/icons';
 import { useState } from 'react';
 import api from '../lib/api';
-import type { Post, Comment } from '../type';
+import type { Comment, PostItemProps } from '../type';
 
 const { Text } = Typography;
 
-export interface PostItemProps {
-  post: Post;
-  onUpdate?: (post: Post) => void;
-}
-
-const PostItem: React.FC<PostItemProps> = ({ post, onUpdate }) => {
+const PostItem: React.FC<PostItemProps> = ({ post }) => {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);

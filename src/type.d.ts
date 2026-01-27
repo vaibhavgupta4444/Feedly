@@ -1,15 +1,8 @@
+import type { ReactNode } from "react";
+
 export interface SignInFormValues {
   username: string;
   password: string;
-}
-
-export interface User {
-  id: number;
-  username: string;
-  email: string;
-  is_active: boolean;
-  is_verified: boolean;
-  created_at?: string;
 }
 
 export interface Post {
@@ -59,8 +52,8 @@ export interface Notification {
   comment_id?: number;
   is_read: boolean;
   created_at: string;
-  message?: string; // Optional: human-readable message from backend
-  actor_username?: string; // Optional: username from backend
+  message?: string;
+  actor_username?: string;
   actor?: User;
   post?: Post;
   comment?: Comment;
@@ -77,4 +70,48 @@ export interface PaginatedResponse<T> {
   total: number;
   skip: number;
   limit: number;
+}
+
+export interface PostItemProps {
+  post: Post;
+  onUpdate?: (post: Post) => void;
+}
+
+
+export interface PostComposerProps {
+  onCreated?: (post: Post) => void;
+}
+
+export interface Props{
+    children: ReactNode
+}
+
+export interface User{
+    id: string
+    email: string
+    username: string
+    posts_count?: number
+    following?: string[]
+    followers?: string[]
+    is_active?: boolean;
+    is_verified?: boolean;
+    created_at?: string;
+}
+
+export interface UserContextType{
+    user: User | null
+    setUser: React.Dispatch<React.SetStateAction<User | null>>
+    backendUrl: string
+}
+
+export interface IStatus{
+  color: 'default' | 'success' | 'processing' | 'error' | 'warning';
+  text: string;
+  icon: string;
+}
+
+export interface NotificationsResponse {
+  unread_count?: number;
+  notifications?: Notification[];
+  items?: Notification[];
 }

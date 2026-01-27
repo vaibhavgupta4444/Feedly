@@ -121,9 +121,6 @@ class PushNotificationService {
     return permission;
   }
 
-  /**
-   * Subscribe to push notifications
-   */
   async subscribe(token: string): Promise<void> {
     if (!this.isSupported()) {
       throw new Error('Push notifications are not supported in this browser');
@@ -138,9 +135,6 @@ class PushNotificationService {
     // Get VAPID public key
     const publicKey = await this.getVapidPublicKey();
     
-    console.log('🔑 Converting VAPID key to Uint8Array...');
-    console.log('   Original key:', publicKey.substring(0, 50) + '...');
-    
     // Get service worker registration
     const registration = await navigator.serviceWorker.ready;
     
@@ -152,81 +146,18 @@ class PushNotificationService {
         // Subscribe to push notifications
         const applicationServerKey = urlBase64ToUint8Array(publicKey);
         
-        console.log('✅ Converted to Uint8Array:');
-        console.log('   Byte length:', applicationServerKey.length);
-        console.log('   Expected: 65 bytes (P-256 uncompressed)');
-        console.log('   First 10 bytes:', Array.from(applicationServerKey.slice(0, 10)));
-        console.log('   Buffer type:', applicationServerKey.constructor.name);
-        
         if (applicationServerKey.length !== 65) {
-          console.error('❌ INVALID KEY LENGTH!');
-          console.error('   P-256 public keys must be exactly 65 bytes');
-          console.error('   Your key is', applicationServerKey.length, 'bytes');
           throw new Error(`Invalid VAPID key length: ${applicationServerKey.length} bytes (expected 65)`);
         }
-        
-        // First byte should be 0x04 for uncompressed P-256 key
-        if (applicationServerKey[0] !== 4) {
-          console.warn('⚠️  Warning: First byte is', applicationServerKey[0], 'expected 4');
-          console.warn('   This suggests the key might not be a valid P-256 uncompressed public key');
-        }
-        
-        console.log('🔔 Attempting to subscribe to push notifications...');
         
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: applicationServerKey
         });
         
-        console.log('✅ Successfully subscribed!');
-        console.log('   Endpoint:', subscription.endpoint);
-        
-      } catch (error: any) {
-        console.error('❌ Subscription failed!');
-        console.error('   Error name:', error.name);
-        console.error('   Error message:', error.message);
-        console.error('   Full error:', error);
-        
-        if (error.name === 'InvalidAccessError') {
-          console.error('');
-          console.error('═══════════════════════════════════════════════════════');
-          console.error('🚨 INVALID VAPID KEY ERROR');
-          console.error('═══════════════════════════════════════════════════════');
-          console.error('');
-          console.error('The browser rejected your VAPID public key.');
-          console.error('');
-          console.error('COMMON CAUSES:');
-          console.error('1. Using PRIVATE key instead of PUBLIC key');
-          console.error('2. Key is corrupted or has extra characters');
-          console.error('3. Key not generated with web-push');
-          console.error('');
-          console.error('HOW TO FIX:');
-          console.error('');
-          console.error('Step 1: Generate new VAPID keys');
-          console.error('   npm install -g web-push');
-          console.error('   web-push generate-vapid-keys');
-          console.error('');
-          console.error('Step 2: Copy the PUBLIC KEY (not private!)');
-          console.error('   It should start with: B...');
-          console.error('   It should be 87-88 characters long');
-          console.error('');
-          console.error('Step 3: Update your backend .env');
-          console.error('   VAPID_PUBLIC_KEY=B...your-public-key...');
-          console.error('   VAPID_PRIVATE_KEY=...your-private-key...');
-          console.error('');
-          console.error('Step 4: Restart backend and clear this.vapidPublicKey cache');
-          console.error('');
-          console.error('To verify your key:');
-          console.error('   curl http://localhost:8000/vapid/public-key');
-          console.error('   Should return: {"public_key": "B..."}}');
-          console.error('');
-          console.error('═══════════════════════════════════════════════════════');
-          console.error('');
-          
-          throw new Error('Invalid VAPID public key. Check console for details.');
-        }
-        
-        throw error;
+      } catch (error: unknown) {
+          throw new Error('Invalid VAPID public key. Check console for details.',
+             error as Error);
       }
     } else {
       console.log('ℹ️  Already subscribed to push notifications');
@@ -244,13 +175,13 @@ class PushNotificationService {
       }
     );
 
-    console.log('✅ Successfully subscribed to push notifications!');
-    console.log('📱 Subscription details:');
-    console.log('   Endpoint:', subscription.endpoint);
-    // console.log('   Keys:', Object.keys(subscription.toJSON().keys));
-    console.log('');
-    console.log('🎉 You will now receive notifications even when the site is closed!');
-    console.log('   To test: Close this tab and have someone interact with your content.');
+    // console.log('✅ Successfully subscribed to push notifications!');
+    // console.log('📱 Subscription details:');
+    // console.log('   Endpoint:', subscription.endpoint);
+    // // console.log('   Keys:', Object.keys(subscription.toJSON().keys));
+    // console.log('');
+    // console.log('🎉 You will now receive notifications even when the site is closed!');
+    // console.log('   To test: Close this tab and have someone interact with your content.');
   }
 
   /**
@@ -277,7 +208,7 @@ class PushNotificationService {
         
         // Unsubscribe from browser
         await subscription.unsubscribe();
-        console.log('✅ Unsubscribed from push notifications');
+        // console.log('✅ Unsubscribed from push notifications');
       }
     } catch (error) {
       console.error('Error unsubscribing from push notifications:', error);

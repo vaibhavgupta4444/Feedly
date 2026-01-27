@@ -1,12 +1,7 @@
 import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
-import type { User } from "../contexts/userContext";
 import UserContext from "../contexts/userContext";
 import axios from "axios";
-
-interface Props{
-    children: ReactNode
-}
+import type { Props, User } from "../type";
 
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
 

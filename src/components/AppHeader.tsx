@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router';
 import { useState, useEffect } from 'react';
 import api from '../lib/api';
 import { socketService } from '../lib/socket';
-import type { Notification } from '../type';
+import type { Notification, NotificationsResponse } from '../type';
 import NotificationStatusIndicator from './NotificationStatusIndicator';
 
 const { Header } = Layout;
@@ -33,24 +33,31 @@ const AppHeader: React.FC = () => {
     }
   }, [isAuthed]);
 
-  const loadUnreadCount = async () => {
-    try {
-      const res = await api.get('/notifications/');
-      
-      // Use unread_count from backend if available
-      if (res.data?.unread_count !== undefined) {
-        setUnreadCount(res.data.unread_count);
-      } else {
-        // Fallback: count manually
-        const data = Array.isArray(res.data) 
-          ? res.data 
-          : (res.data?.notifications || res.data?.items || []);
-        setUnreadCount(data.filter((n: any) => !n.is_read).length);
-      }
-    } catch (err) {
-      // Ignore errors
+  const loadUnreadCount = async (): Promise<void> => {
+  try {
+    const res = await api.get<NotificationsResponse | Notification[]>('/notifications/');
+    const data = res.data;
+
+    if (
+      typeof data === 'object' &&
+      data !== null &&
+      'unread_count' in data &&
+      typeof data.unread_count === 'number'
+    ) {
+      setUnreadCount(data.unread_count);
+      return;
     }
-  };
+
+    const notifications: Notification[] = Array.isArray(data)
+      ? data
+      : data.notifications ?? data.items ?? [];
+
+    setUnreadCount(notifications.filter((n) => !n.is_read).length);
+  } catch (error: unknown) {
+    console.error('Failed to load unread count', error);
+  }
+};
+
 
   const handleLogout = () => {
     localStorage.removeItem('access_token');

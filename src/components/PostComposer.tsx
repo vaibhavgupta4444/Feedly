@@ -3,10 +3,9 @@ import { PictureOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import type { UploadFile } from 'antd';
 import api from '../lib/api';
+import type { PostComposerProps } from '../type';
 
-export interface PostComposerProps {
-  onCreated?: (post: any) => void;
-}
+
 
 const PostComposer: React.FC<PostComposerProps> = ({ onCreated }) => {
   const [form] = Form.useForm();

@@ -14,18 +14,7 @@ import UserContext from './contexts/userContext';
 const { Header, Content, Footer } = Layout;
 const { Title, Paragraph, Text } = Typography;
 
-const App: React.FC = () => {
-  const {
-    token: { colorBgContainer },
-  } = theme.useToken();
-
-  const userData = useContext(UserContext);
-
-  if (userData?.user) {
-    return <Navigate to="/feed" replace />;
-  }
-
-  const features = [
+const features = [
     {
       icon: <RocketOutlined style={{ fontSize: '32px', color: '#667eea' }} />,
       title: 'Fast & Modern',
@@ -57,6 +46,17 @@ const App: React.FC = () => {
       description: 'Join millions of users in our vibrant global community',
     },
   ];
+
+const App: React.FC = () => {
+  const {
+    token: { colorBgContainer },
+  } = theme.useToken();
+
+  const userData = useContext(UserContext);
+
+  if (userData?.user) {
+    return <Navigate to="/feed" replace />;
+  }
 
   return (
     <Layout style={{ minHeight: '100vh', background: '#ffffff' }}>

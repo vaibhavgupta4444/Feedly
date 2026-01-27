@@ -20,11 +20,11 @@ export default function NotificationToggle({ token, onSubscriptionChange }: Noti
   const checkStatus = async () => {
     const supported = pushNotificationService.isSupported();
     setIsSupported(supported);
-    
+
     if (supported) {
       const perm = pushNotificationService.getPermissionStatus();
       setPermission(perm);
-      
+
       const subscribed = await pushNotificationService.isSubscribed();
       setIsSubscribed(subscribed);
     }
@@ -46,22 +46,26 @@ export default function NotificationToggle({ token, onSubscriptionChange }: Noti
       } else {
         // Subscribe
         await pushNotificationService.subscribe(token);
-        
+
         setIsSubscribed(true);
         setPermission('granted');
         onSubscriptionChange?.(true);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error toggling notifications:', error);
-      
-      if (error.message?.includes('permission')) {
-        alert('Please allow notifications in your browser settings to enable push notifications.');
-      } else if (error.message?.includes('VAPID')) {
-        alert('Push notifications are not configured on the server. Please contact support.');
+
+      if (error instanceof Error) {
+        if (error.message.includes("permission")) {
+          alert("Please allow notifications in your browser settings.");
+        } else if (error.message.includes("VAPID")) {
+          alert("Push notifications are not configured on the server.");
+        } else {
+          alert("Failed to update notification settings.");
+        }
       } else {
-        alert('Failed to update notification settings. Please try again.');
+        alert("An unexpected error occurred.");
       }
-      
+
       // Recheck status
       await checkStatus();
     } finally {
@@ -87,8 +91,8 @@ export default function NotificationToggle({ token, onSubscriptionChange }: Noti
             🔔 Push Notifications
           </h3>
           <p className="text-sm text-gray-600 mt-1">
-            {isSubscribed 
-              ? 'Receive notifications even when the app is closed' 
+            {isSubscribed
+              ? 'Receive notifications even when the app is closed'
               : 'Enable to receive notifications when you\'re not on the site'}
           </p>
           {permission === 'denied' && (
@@ -97,7 +101,7 @@ export default function NotificationToggle({ token, onSubscriptionChange }: Noti
             </p>
           )}
         </div>
-        
+
         <button
           onClick={handleToggle}
           disabled={isLoading || permission === 'denied'}

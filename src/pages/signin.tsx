@@ -2,12 +2,12 @@ import { Form, Input, Button, Card, Typography, Checkbox, notification} from 'an
 import { UserOutlined, LockOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router';
 import type { SignInFormValues } from '../type';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import api from '../lib/api';
 
 const { Title, Text } = Typography;
 
-const SignIn = () => {
+const SignIn:React.FC = () => {
   const [form] = Form.useForm<SignInFormValues>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -15,7 +15,6 @@ const SignIn = () => {
   const onFinish = async (values: SignInFormValues) => {
     try {
       setLoading(true);
-      // Convert to URLSearchParams for form-data format
       const formData = new URLSearchParams();
       formData.append('username', values.username);
       formData.append('password', values.password);
@@ -40,6 +39,7 @@ const SignIn = () => {
       }
     } catch (err) {
       // Error notification is handled globally by api interceptor
+      console.log(err)
     } finally {
       setLoading(false);
     }
@@ -111,7 +111,7 @@ const SignIn = () => {
             name="password"
             rules={[
               { required: true, message: 'Please input your password!' },
-              { min: 6, message: 'Password must be at least 6 characters!' }
+              { min: 6 , message: 'Password must be at least 6 characters!' }
             ]}
           >
             <Input.Password 
